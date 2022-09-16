@@ -6,7 +6,7 @@
 //  Copyright © 2017年 Mango. All rights reserved.
 //
 
-import UIKit
+import SwiftUI
 
 public class SwiftCSS {
     
@@ -46,31 +46,30 @@ public class SwiftCSS {
     }
     
     
-    public func color(selector: String, key: String) -> UIColor {
+    public func color(selector: String, key: String) -> Color {
         
         if let rgb:(Double,Double,Double,Double) = value(selector: selector, key: key) {
-            return UIColor(red: CGFloat(rgb.0/255), green: CGFloat(rgb.1/255), blue: CGFloat(rgb.2/255), alpha: CGFloat(rgb.3))
+//            return Color(red: CGFloat(rgb.0/255), green: CGFloat(rgb.1/255), blue: CGFloat(rgb.2/255), alpha: CGFloat(rgb.3))
+            return Color(red: CGFloat(rgb.0/255), green: CGFloat(rgb.1/255), blue: CGFloat(rgb.2/255), opacity: Double(rgb.3))
         } else {
-            return UIColor(string(selector: selector, key: key))
+//            return Color(string(selector: selector, key: key))
+            return Color(hex: string(selector: selector, key: key))
         }
         
     }
     
-    public func font(selector: String, key: String, fontSize: CGFloat = 14) -> UIFont {
+    public func font(selector: String, key: String, fontSize: CGFloat = 14) -> Font {
+        let defaultReturnValue = Font.system(size: fontSize)
         
         if let name: String = value(selector: selector, key: key) {
-            
-            return UIFont(name: name, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
-            
+            return Font.custom(name, size: fontSize)
         } else if let dic: [String:Any] = value(selector: selector, key: key) {
-            
-            guard let name = dic["name"] as? String ,let size = dic["size"] as? Double else {
-                return UIFont.systemFont(ofSize: fontSize)
+            guard let name = dic["name"] as? String, let size = dic["size"] as? Double else {
+                return defaultReturnValue
             }
-            return UIFont(name: name, size: CGFloat(size)) ?? UIFont.systemFont(ofSize: fontSize)
-            
+            return Font.custom(name, size: size)
         } else {
-            return UIFont.systemFont(ofSize: fontSize)
+            return defaultReturnValue
         }
     }
     
@@ -85,4 +84,31 @@ public class SwiftCSS {
         return value
     }
     
+}
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
 }
