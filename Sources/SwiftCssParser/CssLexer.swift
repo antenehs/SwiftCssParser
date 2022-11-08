@@ -11,12 +11,12 @@ import Foundation
 public class Lexer {
     let input: String
     var currentIndex: String.Index
-    var currentCharcter : Character?
+    var currentCharacter : Character?
     
     public init(input: String) {
         self.input = input
         currentIndex = input.startIndex
-        currentCharcter = input.first
+        currentCharacter = input.first
     }
     
     public func consume() {
@@ -27,9 +27,9 @@ public class Lexer {
         
         currentIndex = input.index(after: currentIndex)
         if currentIndex == self.input.endIndex {
-            currentCharcter = nil
+            currentCharacter = nil
         }else{
-            currentCharcter = self.input[currentIndex]
+            currentCharacter = self.input[currentIndex]
         }
     }
 }
@@ -90,11 +90,11 @@ public class CssLexer: Lexer {
     }
     
     enum inputWrong: Error, CustomStringConvertible {
-        case InvaidCharacter(Character)
+        case InvalidCharacter(Character)
         
         var description: String {
             switch self {
-            case let .InvaidCharacter(character):
+            case let .InvalidCharacter(character):
                 return "Invalid character " + String(character)
             }
         }
@@ -108,13 +108,12 @@ func ~=(pattern: (Character) -> Bool , value: Character) -> Bool {
 //MARK: Generate Tokens
 extension CssLexer {
     
-    func nextToken() -> Token? {
-        
+    func nextToken() throws -> Token? {
         
         var consumedChars = [Character]()
-        while let currentCharcter = self.currentCharcter {
+        while let currentCharacter = self.currentCharacter {
             
-            switch currentCharcter {
+            switch currentCharacter {
             case isSpace:
                 self.consume()
             case isSelector:
@@ -138,9 +137,9 @@ extension CssLexer {
                 consume()
                 return .semicolon
             default:
-                fatalError("\(inputWrong.InvaidCharacter(currentCharcter)) Consumued:\(consumedChars)")
+                throw inputWrong.InvalidCharacter(currentCharacter)
             }
-            consumedChars.append(currentCharcter)
+            consumedChars.append(currentCharacter)
         }
         
         return nil
@@ -174,7 +173,7 @@ extension CssLexer {
     func combineLetter() -> Token {
         self.consume() //吃掉"
         var string = ""
-        while let next = self.currentCharcter , next != "\"" {
+        while let next = self.currentCharacter , next != "\"" {
             string += String(next)
             self.consume()
         }
@@ -187,9 +186,9 @@ extension CssLexer {
     }
     
     func combineSelector() -> Token {
-        var string = String(self.currentCharcter!)
+        var string = String(self.currentCharacter!)
         self.consume()
-        while let next = self.currentCharcter , isAToZ(char: next) {
+        while let next = self.currentCharacter , isAToZ(char: next) {
             string += String(next)
             self.consume()
         }
@@ -205,9 +204,9 @@ extension CssLexer {
     }
     
     func combineNumber() -> Token {
-        var string = String(self.currentCharcter!)
+        var string = String(self.currentCharacter!)
         self.consume()
-        while let next = self.currentCharcter , isNumber(char: next) {
+        while let next = self.currentCharacter , isNumber(char: next) {
             string += String(next)
             self.consume()
         }
@@ -230,7 +229,7 @@ extension CssLexer {
     
     func combineRGB() -> Token {
         var string = ""
-        while let next = self.currentCharcter {
+        while let next = self.currentCharacter {
             string += String(next)
             self.consume()
             

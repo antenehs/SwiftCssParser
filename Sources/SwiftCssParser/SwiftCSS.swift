@@ -12,11 +12,11 @@ public class SwiftCSS {
     
     private let parsedCss: [String:[String:Any]]
     
-    public init(CssFileURL: URL) {
+    public init(CssFileURL: URL) throws {
         let content = try! String(contentsOf: CssFileURL, encoding: .utf8)
         let lexer = CssLexer(input: content)
-        let parser = CssParser(lexer: lexer)
-        parser.parse()
+        let parser = try CssParser(lexer: lexer)
+        try parser.parse()
         parsedCss = parser.outputDic
     }
     
