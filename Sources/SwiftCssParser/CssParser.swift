@@ -17,18 +17,18 @@ public class CssParser {
     
     public var outputDic = [String:[String:Any]]()
     
-    public init(lexer: CssLexer) {
+    public init(lexer: CssLexer) throws {
         self.lexer = lexer
         
         for _ in 1...k {
-            consume()
+            try consume()
         }
     }
     
     private var consumedToken = [Token]()
-    func consume() {
+    func consume() throws {
         
-        lookaheads[index] = lexer.nextToken()
+        lookaheads[index] = try lexer.nextToken()
         index = (index + 1) % k
         
         //for debug
@@ -43,7 +43,7 @@ public class CssParser {
         return lookaheads[circularIndex]
     }
     
-    @discardableResult func match(token: Token) -> Token {
+    @discardableResult func match(token: Token) throws -> Token {
         
         guard let lookaheadToken = lookaheadToken(1) else {
             fatalError("lookahead token is nil")
@@ -51,7 +51,7 @@ public class CssParser {
         guard lookaheadToken.type == token.type else {
             fatalError("expecting (\(token.type)) but found (\(lookaheadToken) consumedTokens: \(consumedToken))")
         }
-        consume()
+        try consume()
         return lookaheadToken
     }
     
@@ -60,14 +60,14 @@ public class CssParser {
 //MARK: Rules
 extension CssParser {
     
-    func element(selector: String ) {
+    func element(selector: String ) throws {
         
         guard var selectorDic = outputDic[selector] else {
             fatalError("\(selector) dic not found")
         }
         
-        let key = match(token: .string(""))
-        match(token: .colon)
+        let key = try match(token: .string(""))
+        try match(token: .colon)
         
         guard let currentToken = lookaheadToken(1) else {
             fatalError("lookahead token is nil")
@@ -82,12 +82,12 @@ extension CssParser {
             switch token2 {
             case let .double(double):
                 // key : double double;
-                match(token: currentToken)
-                match(token: token2)
+                try match(token: currentToken)
+                try match(token: token2)
                 selectorDic[key.description] = ["double1":value,"double2":double]
             default:
                 // normal double
-                match(token: currentToken)
+                try match(token: currentToken)
                 selectorDic[key.description] = value
             }
         
@@ -100,16 +100,16 @@ extension CssParser {
             switch token2 {
             case let .double(double):
                 //key : name double
-                match(token: currentToken)
-                match(token: token2)
+                try match(token: currentToken)
+                try match(token: token2)
                 selectorDic[key.description] = ["name":value,"size":double]
             default:
                 //normal string
-                match(token: currentToken)
+                try match(token: currentToken)
                 selectorDic[key.description] = value
             }
         case let .rgb(r,g,b,a):
-            match(token: currentToken)
+            try match(token: currentToken)
             selectorDic[key.description] = (r,g,b,a)
         default:
             break
@@ -118,39 +118,40 @@ extension CssParser {
         outputDic[selector] = selectorDic
     }
     
-    func elements(selector: String) {
-        element(selector: selector)
+    func elements(selector: String) throws {
+        try element(selector: selector)
         while let lookaheadToken = lookaheadToken(1), lookaheadToken.type ==
-            Token.semicolon.type {
-                match(token: .semicolon)
-                
-                //if current token is "}", it means elements rule is parsed.
-                if let currentToken = self.lookaheadToken(1), currentToken.type == Token.rightBrace.type {
-                    return
-                }
-                element(selector: selector)
+                Token.semicolon.type {
+            try match(token: .semicolon)
+            
+            //if current token is "}", it means elements rule is parsed.
+            if let currentToken = self.lookaheadToken(1), currentToken.type == Token.rightBrace.type {
+                return
+            }
+            
+            try element(selector: selector)
         }
     }
     
-    func selector() {
-        let selector = match(token: .selector(""))
+    func selector() throws {
+        let selector = try match(token: .selector(""))
         let dic = [String:Int]()
         outputDic[selector.description] = dic
         
-        match(token: .leftBrace)
-        elements(selector: selector.description)
-        match(token: .rightBrace)
+        try match(token: .leftBrace)
+        try elements(selector: selector.description)
+        try match(token: .rightBrace)
     }
     
-    func css() {
+    func css() throws {
         
         while lookaheadToken(1) != nil {
-            selector()
+            try selector()
         }
     }
     
-    public func parse() {
-        css()
+    public func parse() throws {
+        try css()
     }
     
 }
